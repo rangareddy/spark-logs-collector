@@ -1,7 +1,19 @@
 #!/bin/bash
 
+SCRIPT=`basename "$0"`
+
 #application_id=$1
-application_id="application_1234"
+
+usage() {
+    echo "$SCRIPT: Usage: [application_id]"
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+application_id=$1
 
 current_dir=$(pwd)
 event_logs=true
