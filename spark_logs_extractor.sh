@@ -31,11 +31,18 @@ if [ $application_logs ]; then
 fi
 
 if [ $event_logs ]; then
+   echo "Extracting the Event logs for Application ${application_id}"
    
-   echo "Extracting the Event logs for applicationId ${application_id}"
-   event_log_dir="/user/spark/applicationHistory/${application_id}"
-   echo "hdfs dfs -get $event_log_dir > eventLogs_${application_id}.log"
-   echo "Event logs extracted succefully"
+   event_log_dir=`cat /etc/spark*/conf/spark-defaults.conf | grep 'spark.eventLog.dir' | cut -d ' ' -f2 | cut -d '=' -f2`
+   event_log_application_path=`hdfs dfs -ls $event_log_dir | grep ${application_id}`
+   
+   if [ -z "$event_log_application_path" ]; then
+      echo "Applciation <${application_id}> is not found in event logs directory."
+   else
+      event_log_hdfs_path=`echo $application_path | grep -o 'hdfs.*'`
+      echo "hdfs dfs -get ${event_log_hdfs_path} > eventLogs_${application_id}.log"
+      echo "Event logs extracted succefully"
+   fi
    echo ""
 fi
 
