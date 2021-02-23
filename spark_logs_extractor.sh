@@ -16,56 +16,73 @@
 #  Date    : 22-Feb-2021                                                                                  #
 ###########################################################################################################
 
+echo ""
+
 SCRIPT=`basename "$0"`
-usage() {
-    echo "Usage: $SCRIPT <application_id>"
-    exit 1
-}
 
 if [ $# -lt 1 ]; then
-    usage
+    echo "Usage: $SCRIPT <application_id>"
+    exit 1
 fi
 
-CURRENT_DATE="`date '+%Y%m%d'`"
-CURRENT_TIMESTAMP=${CURRENT_TIMESTAMP:-"$(date '+%Y%m%d%H%M%S')"}
+APPLICATION_ID=$1
+START_DATE="`date '+%Y-%m-%d %I:%M:%S'`"
+
+echo "Extracting the Spark logs for Application <${APPLICATION_ID}> at ${START_DATE}"
+
+CURRENT_DIR=$(pwd)
+IS_EVENT_LOGS=${IS_EVENT_LOGS:-"true"}
+IS_APPLICATION_LOGS=${IS_APPLICATION_LOGS:-"true"}
+DESTINATION_DIR=${CURRENT_DIR}"/"${APPLICATION_ID}
+
+#CURRENT_TIMESTAMP=${CURRENT_TIMESTAMP:-"$(date '+%Y%m%d%H%M%S')"}
+
 APPLICATION_USER=${APPLICATION_USER:-`whoami`}
 
-APPLICATION_ID=$1
+export HADOOP_USER_NAME=${APPLICATION_USER}
 
-current_dir=$(pwd)
-event_logs=true
-application_logs=true
-destination_dir=${current_dir}"/"${APPLICATION_ID}
+mkdir -p $DESTINATION_DIR
 
-mkdir -p $destination_dir
-ls $destination_dir
+if [ $IS_APPLICATION_LOGS ]; then
+   echo "Extracting the Application logs for Application <${APPLICATION_ID}>"
 
-if [ $application_logs ]; then
-   echo "Extracting the Application logs for applicationId ${APPLICATION_ID}"
-   yarn application -status $ApplicationId
-   if [ $status = “RUNNING” ];then
-        echo "Application is Running"    
-   fi
+   #yarn application -status $APPLICATION_ID
+   #if [ $status = "RUNNIN" ];then
+   #     echo "Application is Running"
+   #fi
 
-   echo "yarn logs -applicationId ${APPLICATION_ID} > application_${APPLICATION_ID}.log"
+   yarn logs -applicationId ${APPLICATION_ID} > ${DESTINATION_DIR}/${APPLICATION_ID}.log
    echo "Application logs extracted succefully"
    echo ""
 fi
 
-if [ $event_logs ]; then
+if [ $IS_EVENT_LOGS ]; then
    echo "Extracting the Event logs for Application <${APPLICATION_ID}>"
-   
+
    event_log_dir=`cat /etc/spark*/conf/spark-defaults.conf | grep 'spark.eventLog.dir' | cut -d ' ' -f2 | cut -d '=' -f2`
    event_log_application_path=`hdfs dfs -ls $event_log_dir | grep ${APPLICATION_ID}`
-   
+
    if [ -z "$event_log_application_path" ]; then
       echo "Applciation <${APPLICATION_ID}> is not found in event logs directory."
    else
-      event_log_hdfs_path=`echo $application_path | grep -o 'hdfs.*'`
-      echo "hdfs dfs -get ${event_log_hdfs_path} > eventLogs_${APPLICATION_ID}.log"
+      event_log_hdfs_path=`echo $event_log_application_path | grep -o 'hdfs.*'`
+      hdfs dfs -get ${event_log_hdfs_path} ${DESTINATION_DIR}/eventLogs_${APPLICATION_ID}.log
       echo "Event logs extracted succefully"
    fi
    echo ""
 fi
 
-echo "Spark Logs Extracted successfully for Application <$APPLICATION_ID>"
+EXTRACTED_FILE=""
+
+if [ ! -z "$(ls -A ${DESTINATION_DIR})" ]; then
+
+   EXTRACTED_FILE=${APPLICATION_ID}.tgz
+   tar cvfz ${EXTRACTED_FILE} ${DESTINATION_DIR} > /dev/null 2>&1
+fi
+
+if [ -d "$DESTINATION_DIR" ]; then
+    rm -r -f $DESTINATION_DIR
+fi
+
+END_DATE="`date '+%Y%m%d'`"
+echo "Spark Logs ${EXTRACTED_FILE} extracted successfully for Application <$APPLICATION_ID> at ${END_DATE}"
