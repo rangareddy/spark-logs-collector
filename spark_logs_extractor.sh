@@ -39,24 +39,25 @@ APPLICATION_USER=${APPLICATION_USER:-`whoami`}
 export HADOOP_USER_NAME=${APPLICATION_USER}
 
 mkdir -p $DESTINATION_DIR
+APPLICATION_LOG_FILE_PATH=${DESTINATION_DIR}/${APPLICATION_ID}.log
+EVENT_LOG_FILE_PATH=${DESTINATION_DIR}/eventLogs_${APPLICATION_ID}.log
 
-# Extract the Application logs if it enabled
 if [ $IS_APPLICATION_LOGS ]; then
    echo "<${APPLICATION_ID}> - Extracting the Application logs"
 
-   #yarn application -status $APPLICATION_ID
-   #if [ $status = "RUNNIN" ];then
-   #     echo "Application is Running"
-   #fi
-
-   yarn logs -applicationId ${APPLICATION_ID} > ${DESTINATION_DIR}/${APPLICATION_ID}.log
-   echo "<${APPLICATION_ID}> - Application logs extracted succefully"
+   yarn logs -applicationId ${APPLICATION_ID} > ${APPLICATION_LOG_FILE_PATH}
+   check=$?
+   if [ "$check" -eq 0 ]; then
+     echo "<${APPLICATION_ID}> - Application logs extracted succefully"
+   else
+     echo "<${APPLICATION_ID}> - Application logs extraction failed"
+     exit 0;
+   fi
    echo ""
 fi
 
-# Extract the Event logs if it enabled
 if [ $IS_EVENT_LOGS ]; then
-   echo "<${APPLICATION_ID}> - Extracting the Event logs for Application"
+   echo "<${APPLICATION_ID}> - Extracting the Event logs"
 
    event_log_dir=`cat /etc/spark*/conf/spark-defaults.conf | grep 'spark.eventLog.dir' | cut -d ' ' -f2 | cut -d '=' -f2`
    event_log_application_path=`hdfs dfs -ls $event_log_dir | grep ${APPLICATION_ID}`
@@ -65,40 +66,46 @@ if [ $IS_EVENT_LOGS ]; then
       echo "<${APPLICATION_ID}> - Applciation not found in event logs <${event_log_dir}> directory."
    else
       event_log_hdfs_path=`echo $event_log_application_path | grep -o 'hdfs.*'`
-      ls ${DESTINATION_DIR}
-      hdfs dfs -get ${event_log_hdfs_path} ${DESTINATION_DIR}/eventLogs_${APPLICATION_ID}.log
-      echo "<${APPLICATION_ID}> - Event logs extracted succefully"
+      hdfs dfs -get ${event_log_hdfs_path} ${EVENT_LOG_FILE_PATH}
+      check=$?
+      if [ "$check" -eq 0 ]; then
+         echo "<${APPLICATION_ID}> - Event logs extracted succefully"
+      else
+         echo "<${APPLICATION_ID}> - Event logs extraction failed"
+         exit 0;
+      fi
    fi
    echo ""
 fi
 
-# Compress the spark logs
 EXTRACTED_FILE=""
+
 if [ ! -z "$(ls -A ${DESTINATION_DIR})" ]; then
+
    if [ -x "$(command -v tar)" ]; then
-      EXTRACTED_FILE=${APPLICATION_ID}.tgz
-      tar cvfz ${EXTRACTED_FILE} ${DESTINATION_DIR} > /dev/null 2>&1
+      cd $DESTINATION_DIR
+      EXTRACTED_FILE=${CURRENT_DIR}/${APPLICATION_ID}.tgz
+      tar cvfz ${EXTRACTED_FILE} * > /dev/null 2>&1
    elif [ -x "$(command -v gzip)" ]; then
-      EXTRACTED_FILE=${APPLICATION_ID}.gz
-      gzip -c -r ${DESTINATION_DIR}/* > ${EXTRACTED_FILE}
+      cd $DESTINATION_DIR
+      EXTRACTED_FILE=${CURRENT_DIR}/${APPLICATION_ID}.gz
+      gzip -c -r * > ${EXTRACTED_FILE}
    elif [ -x "$(command -v zip)" ]; then
-      EXTRACTED_FILE=${APPLICATION_ID}.zip
-      zip -q -r ${EXTRACTED_FILE} ${DESTINATION_DIR}
+      cd $DESTINATION_DIR
+      EXTRACTED_FILE=${CURRENT_DIR}/${APPLICATION_ID}.zip
+      zip -q -r ${EXTRACTED_FILE} *
    else
       echo "Compression formats [tar|gzip|zip] not installed"
    fi
 fi
 
-# Deleting the destination directory
 if [ -d "$DESTINATION_DIR" ] && [ ! -z "$EXTRACTED_FILE" ]; then
     rm -r -f $DESTINATION_DIR
 fi
 
-# Printing the results
 if [ ! -z "$EXTRACTED_FILE" ]; then
     END_DATE="`date '+%Y-%m-%d %I:%M:%S'`"
-   echo "<${APPLICATION_ID}> - Spark Logs extracted successfully to <${CURRENT_DIR}/${EXTRACTED_FILE}> at ${END_DATE}"
+   echo "<${APPLICATION_ID}> - Spark Logs extracted successfully to <${EXTRACTED_FILE}> at ${END_DATE}"
 else
    echo "<${APPLICATION_ID}> - Spark Logs extraction failed"
 fi
-echo ""
