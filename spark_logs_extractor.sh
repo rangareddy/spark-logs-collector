@@ -34,9 +34,10 @@ CURRENT_DIR=$(pwd)
 IS_EVENT_LOGS=${IS_EVENT_LOGS:-"true"}
 IS_APPLICATION_LOGS=${IS_APPLICATION_LOGS:-"true"}
 DESTINATION_DIR=${CURRENT_DIR}"/"${APPLICATION_ID}
-APPLICATION_USER=${APPLICATION_USER:-`whoami`}
 
-export HADOOP_USER_NAME=${APPLICATION_USER}
+if [ -z ${HADOOP_USER_NAME} ]; then
+   export HADOOP_USER_NAME=${APPLICATION_USER:-`whoami`}
+fi
 
 mkdir -p $DESTINATION_DIR
 APPLICATION_LOG_FILE_PATH=${DESTINATION_DIR}/${APPLICATION_ID}.log
@@ -86,10 +87,6 @@ if [ ! -z "$(ls -A ${DESTINATION_DIR})" ]; then
       cd $DESTINATION_DIR
       EXTRACTED_FILE=${CURRENT_DIR}/${APPLICATION_ID}.tgz
       tar cvfz ${EXTRACTED_FILE} * > /dev/null 2>&1
-   elif [ -x "$(command -v gzip)" ]; then
-      cd $DESTINATION_DIR
-      EXTRACTED_FILE=${CURRENT_DIR}/${APPLICATION_ID}.gz
-      gzip -c -r * > ${EXTRACTED_FILE}
    elif [ -x "$(command -v zip)" ]; then
       cd $DESTINATION_DIR
       EXTRACTED_FILE=${CURRENT_DIR}/${APPLICATION_ID}.zip
