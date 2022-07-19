@@ -15,6 +15,7 @@ The following are the advantages of **Spark Logs Collector**
 1. We can collect both Application logs and event logs.
 1. Collected logs are with **compressed (`[tar|zip]`)** format.
 1. No need to run any commands to collect the logs.
+1. It will work in kerberized cluster as well.
 
 ## How to use
 
