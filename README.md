@@ -12,10 +12,10 @@ Spark Logs Collector is a simple utility tool used for collecting YARN Applicati
 
 The following are the advantages of **Spark Logs Collector**
 
-1. We can collect both Application logs and event logs.
+1. We can collect both **Application logs** and **Event logs**.
 1. Collected logs are with **compressed (`[tar|zip]`)** format.
 1. No need to run any commands to collect the logs.
-1. It will work in kerberized cluster as well.
+1. We can collect the logs even in **Kerberized cluster**.
 
 ## How to use
 
@@ -34,17 +34,23 @@ sh spark_logs_collector.sh <application_id>
 
 > Replace **application_id** with your **spark application id**.
 
-## Additional
+**Example:**
 
-By default, this utility will collect both application and event logs. If you don't want to collecte either one of them you can disable it.
+```sh
+sh spark_logs_collector.sh application_1658141526730_0004
+```
 
-Disabling the Event logs:
+## Additional Info
+
+By default, this utility will collect both application and event logs. If you don't want to collect any one of the logs you can disable it.
+
+**Disabling the Event logs:**
 
 ```sh
 export EVENT_LOGS_ENABLED=fase
 ```
 
-Disabling the Application logs:
+**Disabling the Application logs:**
 
 ```sh
 export APPLICATION_LOGS_ENABLED=fase
@@ -58,7 +64,7 @@ export APPLICATION_USER=rangareddy
 
 ## Troubleshooting
 
-**Issue:** `Permission denied: user=<USER_NAME>, access=READ, inode="<DIRECTORY_PATH>":exam:spark:-rwxrwx---`
+**Issue:** `Permission denied: user=<USER_NAME>, access=READ, inode="<DIRECTORY_PATH>":exam:spark:-rwxrwx`
 
 **Description:** User <USER_NAME> don't have hdfs permission to access the <DIRECTORY_PATH> directory.
 
@@ -87,22 +93,5 @@ Do you want to contribute to this project, please connect with me on [Linkedin](
 
 Copyright ©2022 Ranga Reddy, https://github.com/rangareddy
 
-**Twitter:** https://twitter.com/avula_ranga
-**LinkedIn:** https://www.linkedin.com/in/ranga-reddy-big-data-developer/
-
-
-EVENT_LOG_HDFS_APP_PATH=$(hdfs dfs -ls "$EVENT_LOG_DIR" | grep "${APPLICATION_ID}")
-
-    if [ -z "$EVENT_LOG_HDFS_APP_PATH" ]; then
-        log_error "Applciation not found in event logs <${EVENT_LOG_DIR}> directory."
-    else
-        EVENT_LOG_HDFS_PATH=$(echo "$EVENT_LOG_HDFS_APP_PATH" | grep -o 'hdfs.*')
-        hdfs dfs -get "${EVENT_LOG_HDFS_PATH}" "${EVENT_LOG_FILE_PATH}"
-        event_log_collect_status=$?
-        if [ "$event_log_collect_status" -eq 0 ]; then
-            log_info "Event logs collected succefully."
-        else
-            log_error "Event logs extraction failed."
-            exit 1;
-        fi
-    fi
+* **Twitter:** https://twitter.com/avula_ranga
+* **LinkedIn:** https://www.linkedin.com/in/ranga-reddy-big-data-developer/
