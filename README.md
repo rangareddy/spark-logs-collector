@@ -13,9 +13,9 @@ Spark Logs Collector is a simple utility tool used for collecting YARN Applicati
 The following are the advantages of **Spark Logs Collector**
 
 1. We can collect both **Application logs** and **Event logs**.
-1. Collected logs are with **compressed (`[tar|zip]`)** format.
+1. Collected logs are in **compressed (`[tar|zip]`)** format.
 1. No need to run any commands to collect the logs.
-1. We can collect the logs even in **Kerberized cluster**.
+1. We can collect the logs even in a **Kerberized cluster**.
 
 ## How to use
 
@@ -56,7 +56,7 @@ export EVENT_LOGS_ENABLED=fase
 export APPLICATION_LOGS_ENABLED=fase
 ```
 
-Even you can change the different user to collect the Spark logs.
+Even you can change the different user, to collect the Spark logs.
 
 ```sh
 export APPLICATION_USER=rangareddy
